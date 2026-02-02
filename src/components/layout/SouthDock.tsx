@@ -15,21 +15,29 @@ export const SouthDock: React.FC = () => {
         launchCooldown
     } = useGameStore();
 
+    const lastSellTime = useGameStore(s => s.lastSellTime);
+    const inventory = useGameStore(s => s.inventory);
+
     const { playSound } = useAudio();
 
     const [timeRemaining, setTimeRemaining] = React.useState(0);
-
-    // ... (useEffect) ... remove existing if duplicate, but here I just insert the hook call
+    const [sellTimeRemaining, setSellTimeRemaining] = React.useState(0);
 
     React.useEffect(() => {
         const interval = setInterval(() => {
             const now = Date.now();
-            const diff = now - lastLaunchTime;
-            const remaining = Math.max(0, launchCooldown - diff);
-            setTimeRemaining(remaining);
-        }, 100);
+
+            // Launch Timer
+            const diffLaunch = now - lastLaunchTime;
+            setTimeRemaining(Math.max(0, launchCooldown - diffLaunch));
+
+            // Sell Timer
+            const diffSell = now - lastSellTime;
+            setSellTimeRemaining(Math.max(0, 1500 - diffSell));
+
+        }, 50); // Faster update for UI smoothness
         return () => clearInterval(interval);
-    }, [lastLaunchTime, launchCooldown]);
+    }, [lastLaunchTime, launchCooldown, lastSellTime]);
 
     const showScan = research.scan;
     const showLaunch = research.scan && research.rocket && research.mining && asteroid;
@@ -42,14 +50,18 @@ export const SouthDock: React.FC = () => {
     };
 
     const handleSell = () => {
+        if (sellTimeRemaining > 0 || inventory.aetherite <= 0) return;
         playSound('click_clean');
         useGameStore.getState().sellAetherite();
     };
 
     const isCooldown = timeRemaining > 0;
+    const isSellCooldown = sellTimeRemaining > 0;
     const hasFunds = money >= 10_000_000;
+    const hasAetherite = inventory.aetherite > 0;
 
     const cooldownProgress = isCooldown ? (timeRemaining / launchCooldown) : 0;
+    const sellProgress = isSellCooldown ? (sellTimeRemaining / 1500) : 0;
 
     const buttons = [
         // ... (Scan button) ...
@@ -74,20 +86,21 @@ export const SouthDock: React.FC = () => {
             icon: Rocket,
             show: showLaunch,
             action: handleLaunch,
-            color: (isCooldown || !hasFunds) ? 'text-neutral-slate' : 'text-warning-red',
-            bg: (isCooldown || !hasFunds) ? 'bg-white/5 cursor-not-allowed' : 'hover:bg-red-500/20 hover:border-red-500/30',
+            color: (isCooldown || !hasFunds) ? 'text-neutral-slate' : 'text-green-400',
+            bg: (isCooldown || !hasFunds) ? 'bg-white/5 cursor-not-allowed' : 'hover:bg-green-500/20 hover:border-green-500/30',
             disabled: isCooldown || !hasFunds
         },
-        // ...
         {
             id: 'sell',
-            label: 'SELL ORE',
+            label: isSellCooldown
+                ? 'RECHARGING...'
+                : (hasAetherite ? 'SELL 1 ORE' : 'NO ORE'),
             icon: DollarSign,
             show: showSell,
             action: handleSell,
-            color: 'text-green-400',
-            bg: 'hover:bg-green-500/20 hover:border-green-500/30',
-            disabled: false
+            color: (isSellCooldown || !hasAetherite) ? 'text-neutral-slate' : 'text-green-400',
+            bg: (isSellCooldown || !hasAetherite) ? 'bg-white/5 cursor-not-allowed' : 'hover:bg-green-500/20 hover:border-green-500/30',
+            disabled: isSellCooldown || !hasAetherite
         }
     ];
 
@@ -114,13 +127,13 @@ export const SouthDock: React.FC = () => {
                                 btn.bg
                             )}
                         >
-                            {/* Cooldown Overlay for Launch Button */}
-                            {btn.id === 'launch' && isCooldown && (
+                            {/* Cooldown Overlay */}
+                            {((btn.id === 'launch' && isCooldown) || (btn.id === 'sell' && isSellCooldown)) && (
                                 <div
                                     className="absolute inset-0 bg-white/10 z-0 origin-left"
-                                    style={{ width: `${(1 - cooldownProgress) * 100}%` }} // Fill up? Or empty out? "Radial wipe" requested, but horiz bar easier for pill.
-                                // PRD asked for Radial. Pill shape makes radial hard. 
-                                // Let's do a linear fill for the pill shape, it reads better.
+                                    style={{
+                                        width: `${(1 - (btn.id === 'launch' ? cooldownProgress : sellProgress)) * 100}%`
+                                    }}
                                 />
                             )}
 

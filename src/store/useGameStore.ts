@@ -41,6 +41,11 @@ interface GameState {
     researchProbabilities: Record<keyof ResearchState, number>; // 0.0 to 1.0
     xp: number; // Experience multiplier
     asteroid: AsteroidData | null;
+    aetheritePrice: number;
+    priceHistory: number[];
+    lastSellTime: number;
+    marketSaturation: number;
+    tickMarket: (dt: number) => void;
 
     // Mining Units
     miners: Miner[];
@@ -343,17 +348,56 @@ export const useGameStore = create<GameState>((set, get) => ({
         set({ asteroid: null });
     },
 
+    // Market
+    aetheritePrice: 1_200_000,
+    priceHistory: Array(40).fill(1200000),
+    lastSellTime: 0,
+    marketSaturation: 0.5,
+
+    tickMarket: (dt) => {
+        set((state) => {
+            // 1. Recovery
+            const recoveryRate = 0.05; // per second
+            let newSaturation = Math.max(0, state.marketSaturation - recoveryRate * dt);
+
+            // 2. Price Calculation
+            // Base 1M. Saturation 0 => 1.5M. Saturation 1 => 0.5M.
+            const basePrice = 1_000_000;
+            const multiplier = Math.max(0.1, 1.5 - newSaturation);
+            const noise = (Math.random() - 0.5) * 20000; // jitter
+
+            let newPrice = (basePrice * multiplier) + noise;
+
+            // 3. History Update (Probabilistic throttling ~10Hz)
+            let newHistory = state.priceHistory;
+            if (Math.random() < 0.16) {
+                newHistory = [...state.priceHistory.slice(1), newPrice];
+            }
+
+            return {
+                aetheritePrice: newPrice,
+                marketSaturation: newSaturation,
+                priceHistory: newHistory
+            };
+        });
+    },
+
     sellAetherite: () => {
         const state = get();
-        const amount = state.inventory.aetherite;
-        if (amount <= 0) return;
+        const now = Date.now();
+        const COOLDOWN = 1500;
 
-        const PRICE_PER_UNIT = 15_000; // Market Rate
-        const revenue = amount * PRICE_PER_UNIT;
+        if (now - state.lastSellTime < COOLDOWN) return;
+        if (state.inventory.aetherite < 1) return;
+
+        const revenue = state.aetheritePrice;
 
         set((state) => ({
             money: state.money + revenue,
-            inventory: { ...state.inventory, aetherite: 0 }
+            inventory: { ...state.inventory, aetherite: state.inventory.aetherite - 1 },
+            lastSellTime: now,
+            marketSaturation: state.marketSaturation + 0.2 // Jump in saturation
         }));
     }
 }));
+

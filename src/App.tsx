@@ -1,3 +1,4 @@
+import React, { useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { SouthDock } from './components/layout/SouthDock';
 import { Earth } from './components/Earth';
@@ -10,38 +11,47 @@ import { GameLoop } from './components/GameLoop';
 import { AudioController } from './components/audio/AudioController';
 import { ScanEffect } from './components/effects/ScanEffect';
 import { useGameStore } from './store/useGameStore';
+import { CameraController } from './components/CameraController';
 
 export default function App() {
   const { asteroid, asteroidRevealed, miners } = useGameStore();
+  const controlsRef = useRef<any>(null);
 
   return (
     <div className="relative w-full h-screen bg-space-black overflow-hidden">
       {/* 3D Layer */}
       <div className="absolute inset-0 z-0">
         <Canvas camera={{ position: [0, 20, 20], fov: 45 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1} />
-          <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+          <React.Suspense fallback={null}>
+            <CameraController controlsRef={controlsRef} />
+            {/* Bright Lighting Setup */}
+            <ambientLight intensity={2.0} />
+            <pointLight position={[10, 10, 10]} intensity={2.5} />
+            <pointLight position={[-10, -10, -10]} intensity={1.0} /> {/* Fill light */}
 
-          <GameLoop /> {/* Inserted GameLoop here */}
-          <AudioController />
-          <ScanEffect />
-          <Earth />
+            <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
 
-          {asteroid && asteroidRevealed && <Asteroid />}
+            <GameLoop />
+            <AudioController />
+            <ScanEffect />
+            <Earth />
 
-          {miners.map((miner) => (
-            <Miner
-              key={miner.id}
-              id={miner.id}
+            {asteroid && asteroidRevealed && <Asteroid />}
+
+            {miners.map((miner) => (
+              <Miner
+                key={miner.id}
+                id={miner.id}
+              />
+            ))}
+
+            <OrbitControls
+              ref={controlsRef}
+              enableZoom={false}
+              minDistance={3.2}
+              maxDistance={50}
             />
-          ))}
-
-          <OrbitControls
-            enableZoom={true}
-            minDistance={5}
-            maxDistance={50}
-          />
+          </React.Suspense>
         </Canvas>
       </div>
 

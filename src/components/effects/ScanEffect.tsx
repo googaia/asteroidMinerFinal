@@ -144,7 +144,7 @@ export const ScanEffect: React.FC = () => {
         if (!activeRef.current || !materialRef.current) return;
 
         // Expansion Speed
-        const speed = 25;
+        const speed = 10;
         radiusRef.current += speed * delta;
 
         // Update Uniforms

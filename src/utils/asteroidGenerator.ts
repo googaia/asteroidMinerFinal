@@ -47,7 +47,7 @@ export const generateAsteroid = (generationCount: number = 1): AsteroidData => {
     const theta = Math.random() * Math.PI * 2;
 
     // Keep speed readable
-    const speed = (0.2 + Math.random() * 0.3) * (Math.random() > 0.5 ? 1 : -1);
+    const speed = (0.05 + Math.random() * 0.1) * (Math.random() > 0.5 ? 1 : -1);
 
     return {
         id: crypto.randomUUID(),

@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import { Html, Trail } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store/useGameStore';
-import { THEME } from '../theme';
 
 interface MinerProps {
     id: string;
@@ -23,7 +22,7 @@ export const Miner: React.FC<MinerProps> = ({ id }) => {
     const progressBarRef = useRef<HTMLDivElement>(null);
 
     // Settings
-    const SPEED = 2.0;
+    const SPEED = 0.8;
     const MINING_DURATION = 5.0;
     const CARGO_CAPACITY = 100;
 
@@ -146,10 +145,7 @@ export const Miner: React.FC<MinerProps> = ({ id }) => {
 
             {machineState === 'MINING' && (
                 <>
-                    <mesh position={[0, 0.15, 0]}>
-                        <boxGeometry args={[0.15, 0.15, 0.15]} />
-                        <meshStandardMaterial color={THEME.colors.glassWhite} wireframe />
-                    </mesh>
+                    {/* Wireframe REMOVED */}
                     <Html position={[0, 0.5, 0]} center>
                         <div className="flex flex-col items-center gap-1 pointer-events-none">
                             <div className="w-12 h-1 bg-black/50 rounded-full overflow-hidden border border-white/20 backdrop-blur-md">

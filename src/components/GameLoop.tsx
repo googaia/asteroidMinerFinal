@@ -8,6 +8,7 @@ export const GameLoop = () => {
     useFrame((_, delta) => {
         tickAsteroid(delta);
         tickResearch(delta);
+        useGameStore.getState().tickMarket(delta);
     });
 
     return null;

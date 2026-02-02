@@ -73,7 +73,7 @@ export const EastWing: React.FC = () => {
         },
         {
             id: 'market',
-            name: 'Offworld Trading',
+            name: 'Aetherite Market',
             icon: DollarSign,
             cost: RESEARCH_COSTS.market,
             description: 'Sell Aetherite.',
